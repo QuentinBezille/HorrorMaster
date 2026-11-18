@@ -72,8 +72,8 @@ function choisir(code) {
 }
 
 let page = 0;
-const GAP = 16;
-const LARGEUR_CIBLE = 140;   // largeur visée d'une carte en px : plus petit = plus de cartes par page
+const GAP = 12;
+const LARGEUR_CIBLE = 108;   // largeur visée d'une carte en px : plus petit = plus de cartes par page
 
 function mesure(W, H) {
   const cols = Math.max(1, Math.round((W + GAP) / (LARGEUR_CIBLE + GAP)));
@@ -109,7 +109,9 @@ function afficher() {
   $("message").replaceChildren(liste.length ? "" : el("p", { className: "vide" }, videTexte));
 
   const zone = $("grille-zone");
-  const W = zone.clientWidth - 20, H = zone.clientHeight - 20;
+  const cs = getComputedStyle(zone);
+  const W = zone.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const H = zone.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
   if (W < 100 || H < 100) return;   // onglet masqué : le ResizeObserver relancera afficher()
 
   const { cols, rows, cw } = mesure(W, H);
@@ -134,13 +136,19 @@ function carte(c) {
   b.dataset.r = c.rarete;
   const visuel = el("div", { className: "visuel" });
   if (c.image_url) {
-    visuel.append(el("img", { src: c.image_url, alt: "", loading: "lazy" }));
+    const img = el("img", { src: c.image_url, alt: "", loading: "lazy" });
+    // Les images très larges (logos, bannières) sont affichées entières au lieu d'être rognées
+    const marquer = () => { if (img.naturalWidth > img.naturalHeight * 1.2) img.classList.add("large"); };
+    img.addEventListener("load", marquer);
+    if (img.complete) marquer();
+    visuel.append(img);
   } else {
-    visuel.append(el("div", { className: "sans-image", textContent: nomCourt(c.titre).slice(0, 2) }));
+    visuel.append(el("div", { className: "sans-image", innerHTML: CRANE }));
   }
+  visuel.append(el("div", { className: "nom", textContent: nomCourt(c.titre) }));
+  b.title = c.titre;
   b.append(
     visuel,
-    el("div", { className: "nom", textContent: nomCourt(c.titre) }),
     el("div", { className: "stats" },
       el("span", { className: "atq" }, "Att. ", el("b", { textContent: c.atq })),
       el("span", { className: "def" }, "Déf. ", el("b", { textContent: c.def })),
