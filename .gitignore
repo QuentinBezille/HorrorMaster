@@ -1,0 +1,17 @@
+# Scripts et données de préparation (ne servent pas au site)
+scripts/
+sql/
+
+# Secrets
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Système et éditeur
+.DS_Store
+Thumbs.db
+.vscode/
