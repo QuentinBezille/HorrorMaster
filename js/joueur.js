@@ -2,6 +2,8 @@
 let sb;
 let connecte = false;
 let possedees = new Map();   // id de carte -> quantité
+let favoris = new Set();     // ids des cartes favorites
+let obtenues = new Map();    // id de carte -> date de dernière obtention (ms)
 let etat = null;             // { boosters, prochain }
 let minuteur = null;
 let dernierRafraichi = 0;
@@ -18,6 +20,8 @@ function initJoueur() {
 async function appliquerSession(session) {
   connecte = !!session;
   possedees = new Map();
+  favoris = new Set();
+  obtenues = new Map();
   etat = null;
   statut("");
   $("recherche").value = "";          // <-- ajouter cette ligne
@@ -30,10 +34,14 @@ async function rafraichirJoueur() {
   dernierRafraichi = Date.now();
   const [e, col] = await Promise.all([
     sb.rpc("etat_joueur"),
-    toutLire("collection", "card_id, quantite", "card_id"),
+    toutLire("collection", "card_id, quantite, favori, derniere_obtention", "card_id"),
   ]);
   if (!e.error) etat = e.data;
-  if (!col.error) possedees = new Map(col.data.map(l => [l.card_id, l.quantite]));
+  if (!col.error) {
+    possedees = new Map(col.data.map(l => [l.card_id, l.quantite]));
+    favoris = new Set(col.data.filter(l => l.favori).map(l => l.card_id));
+    obtenues = new Map(col.data.map(l => [l.card_id, l.derniere_obtention ? Date.parse(l.derniere_obtention) : 0]));
+  }
 }
 
 const SANG = '<svg viewBox="0 0 240 100" aria-hidden="true">' +
@@ -73,8 +81,8 @@ function dessinerJoueur() {
   const maj = () => {
     const n = etat ? etat.boosters : 0;
     paquet.disabled = n < 1;
-    let t = `${n} booster${n > 1 ? "s" : ""} sur 10.`;
-    if (etat && n < 10) {
+    let t = `${n} booster${n > 1 ? "s" : ""} sur 5.`;
+    if (etat && n < 5) {
       const reste = Math.max(0, Math.ceil((new Date(etat.prochain) - Date.now()) / 1000));
       t += ` Le prochain arrive dans ${Math.floor(reste / 60)}:${String(reste % 60).padStart(2, "0")}.`;
       if (reste === 0 && Date.now() - dernierRafraichi > 15000) {
@@ -128,9 +136,11 @@ async function ouvrirBooster() {
     statut("");
     const { data, error } = await sb.rpc("open_booster");
     if (error) {
+      Sons.jouer("erreur");
       statut(error.message);
       return;
     }
+    Sons.jouer("ouverture");
     etat = { boosters: data.boosters, prochain: data.prochain };
     data.cartes.forEach(c => possedees.set(c.id, (possedees.get(c.id) || 0) + 1));
     bCartes = data.cartes;
@@ -193,15 +203,19 @@ function avancer() {
   if (!w) return;
   if (!w.classList.contains("retournee")) {
     w.classList.add("retournee");
+    Sons.jouer("retourner");
+    Sons.rarete(bCartes[bIndex].rarete);
     majBoutonBooster();
     return;
   }
+  Sons.jouer("suivante");
   bIndex++;
   if (bIndex >= bCartes.length) return recap();
   majPile();
 }
 
 function recap() {
+  Sons.jouer("recap");
   $("pile").hidden = true;
   $("suivante").hidden = true;
   $("fin-booster").hidden = false;

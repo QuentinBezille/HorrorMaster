@@ -12,6 +12,7 @@ const NOMS = Object.fromEntries(RARETES.map(r => [r.code, r.nom]));
 
 let cartes = [];
 let filtreRarete = null;
+let filtreFavoris = false;
 let vue = "cartes";   // "cartes" = toutes les cartes, "collection" = seulement les miennes
 
 async function toutLire(table, colonnes, tri) {
@@ -61,11 +62,22 @@ function construireFiltres() {
     b.dataset.code = r.code;
     zone.append(b);
   });
+  // Filtre « Favoris » : visible seulement dans l'onglet Collection
+  const fav = el("button", { id: "filtre-favoris", className: "filtre", type: "button", textContent: "★ Favoris" });
+  fav.setAttribute("aria-pressed", "false");
+  fav.hidden = true;
+  fav.onclick = () => {
+    filtreFavoris = !filtreFavoris;
+    fav.setAttribute("aria-pressed", String(filtreFavoris));
+    page = 0;
+    afficher();
+  };
+  zone.append(fav);
 }
 function choisir(code) {
   filtreRarete = code;
   page = 0;
-  document.querySelectorAll(".filtre").forEach(b => {
+  document.querySelectorAll(".filtre:not(#filtre-favoris)").forEach(b => {
     b.setAttribute("aria-pressed", String((b.dataset.code ?? null) === code));
   });
   afficher();
@@ -88,7 +100,7 @@ function afficher() {
   const tri = $("tri").value || "rarete";
   let liste = cartes.filter(c =>
     (!filtreRarete || c.rarete === filtreRarete) &&
-    (vue !== "collection" || possedees.has(c.id)) &&
+    (!(vue === "collection" && filtreFavoris) || favoris.has(c.id)) &&
     (!q || c.titre.toLowerCase().includes(q))
   );
   const cle = {
@@ -97,6 +109,7 @@ function afficher() {
     atq:    c => c.atq || 0,
     def:    c => c.def || 0,
     annee:  c => c.annee || 0,
+    recent: c => obtenues.get(c.id) || 0,
   }[tri];
   liste.sort(tri === "titre"
     ? (a, b) => a.titre.localeCompare(b.titre, "fr")
@@ -106,6 +119,7 @@ function afficher() {
   let videTexte = "Aucune carte ne correspond. Essaie un autre mot ou une autre rareté.";
   if (vue === "collection" && !connecte) videTexte = "Connecte-toi depuis l'onglet Boosters pour voir ta collection.";
   else if (vue === "collection" && !possedees.size) videTexte = "Ta collection est vide. Ouvre un booster pour commencer.";
+    else if (vue === "collection" && filtreFavoris && !favoris.size) videTexte = "Aucun favori pour l'instant. Clique sur l'étoile d'une carte pour en ajouter.";
   $("message").replaceChildren(liste.length ? "" : el("p", { className: "vide" }, videTexte));
 
   const zone = $("grille-zone");
@@ -122,7 +136,7 @@ function afficher() {
   const g = $("grille");
   g.style.gridTemplateColumns = `repeat(${cols}, ${cw}px)`;
   g.style.gap = GAP + "px";
-  g.replaceChildren(...liste.slice(page * parPage, (page + 1) * parPage).map(c => carte(c)));
+  g.replaceChildren(...liste.slice(page * parPage, (page + 1) * parPage).map(c => cellule(c)));
 
   $("page-info").textContent = `Page ${page + 1} / ${pages}`;
   $("prec").disabled = page === 0;
@@ -160,6 +174,42 @@ function carte(c) {
   if (q > 1) b.append(el("span", { className: "quantite", textContent: String(q), title: q + " exemplaires" }));
   if (c.nouvelle) b.append(el("span", { className: "nouvelle", textContent: "Nouvelle" }));
   return b;
+}
+
+const ETOILE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+
+function majEtoile(b, fav) {
+  b.setAttribute("aria-pressed", String(fav));
+  b.setAttribute("aria-label", fav ? "Retirer des favoris" : "Ajouter aux favoris");
+  b.title = fav ? "Retirer des favoris" : "Ajouter aux favoris";
+}
+
+// Une carte de la grille + son étoile (l'étoile est à côté de la carte, pas dedans)
+function cellule(c) {
+  const cell = el("div", { className: "carte-cell" }, carte(c));
+  if (connecte && possedees.has(c.id)) {
+    const b = el("button", { className: "etoile", type: "button", innerHTML: ETOILE });
+    majEtoile(b, favoris.has(c.id));
+    b.onclick = () => basculerFavori(c.id, b);
+    cell.append(b);
+  }
+  return cell;
+}
+
+async function basculerFavori(id, b) {
+  const voulu = !favoris.has(id);
+  const appliquer = v => {
+    if (v) favoris.add(id); else favoris.delete(id);
+    majEtoile(b, v);
+  };
+  appliquer(voulu);   // l'étoile change tout de suite, sans attendre le serveur
+  if (filtreFavoris && vue === "collection") afficher();   // la carte quitte la liste des favoris
+  const { error } = await sb.rpc("basculer_favori", { p_card: id, p_favori: voulu });
+  if (error) {
+    appliquer(!voulu);
+    afficher();
+    erreur("Impossible de modifier le favori : " + error.message);
+  }
 }
 
 function ouvrir(c) {

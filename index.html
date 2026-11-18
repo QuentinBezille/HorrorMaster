@@ -32,7 +32,10 @@
   <button class="onglet-btn" type="button" role="tab" data-onglet="boosters" aria-selected="true">Boosters</button>
   <button class="onglet-btn" type="button" role="tab" data-onglet="cartes" aria-selected="false">Toutes les cartes</button>
   <button class="onglet-btn" type="button" role="tab" data-onglet="collection" aria-selected="false">Collection</button>
+
 </nav>
+
+
 
 <section id="onglet-boosters" class="onglet joueur-zone">
   <p class="intro-boosters">Une carte par film d'horreur. Plus son article Wikipédia est lu, plus la carte est rare.</p>
@@ -58,6 +61,7 @@
     <div class="filtres" id="filtres" role="group" aria-label="Filtrer par rareté"></div>
     <select id="tri" aria-label="Trier les cartes">
       <option value="rarete">Trier par rareté</option>
+      <option value="recent">Trier par dernière obtenue</option>
       <option value="vues">Trier par vues</option>
       <option value="atq">Trier par attaque</option>
       <option value="def">Trier par défense</option>
@@ -102,6 +106,7 @@
 
 <script src="js/config.js"></script>
 <script src="js/utils.js"></script>
+<script src="js/sons.js"></script>
 <script src="js/cartes.js"></script>
 <script src="js/joueur.js"></script>
 <script src="js/main.js"></script>
