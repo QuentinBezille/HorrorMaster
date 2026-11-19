@@ -11,6 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/echanges.css">
 </head>
 <body class="page-boosters">
 
@@ -32,6 +33,7 @@
   <button class="onglet-btn" type="button" role="tab" data-onglet="boosters" aria-selected="true">Boosters</button>
   <button class="onglet-btn" type="button" role="tab" data-onglet="cartes" aria-selected="false">Toutes les cartes</button>
   <button class="onglet-btn" type="button" role="tab" data-onglet="collection" aria-selected="false">Collection</button>
+  <button class="onglet-btn" type="button" role="tab" data-onglet="echanges" aria-selected="false">Échanges</button>
 
 </nav>
 
@@ -48,6 +50,7 @@
     <div class="rangee" id="rangee" hidden></div>
     <div class="actions">
       <button class="bouton principal" id="suivante" type="button">Retourner la carte</button>
+      <button class="bouton" id="fav-booster" type="button" aria-pressed="false" hidden>☆ Ajouter aux favoris</button>
       <button class="bouton principal" id="fin-booster" type="button" hidden>Terminer</button>
     </div>
   </div>
@@ -86,6 +89,11 @@
 
 </section>
 
+<section id="onglet-echanges" class="onglet echanges" hidden>
+  <p id="ech-statut" class="msg" role="status"></p>
+  <div id="ech-contenu"></div>
+</section>
+
 <dialog id="detail"></dialog>
 
 <dialog id="connexion">
@@ -109,6 +117,8 @@
 <script src="js/sons.js"></script>
 <script src="js/cartes.js"></script>
 <script src="js/joueur.js"></script>
+
+<script src="js/echanges.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 const Sons = (() => {
   let ac = null, master = null, bruit = null, ambiance = null;
   let actif = lire("hm_son", "1") === "1";
-  let ambianceVoulue = lire("hm_ambiance", "0") === "1";
+  let ambianceVoulue = lire("hm_ambiance", "1") === "1";
 
   function lire(cle, defaut) {
     try { return localStorage.getItem(cle) ?? defaut; } catch { return defaut; }
@@ -139,6 +139,12 @@ const Sons = (() => {
       note({ f: 110, f2: 55, duree: 0.35, vol: 0.3, type: "sawtooth" });
       note({ f: 117, f2: 58, duree: 0.35, vol: 0.2, type: "sawtooth" });
     },
+        // Un échange est conclu
+    echange() {
+      souffle({ duree: 0.3, vol: 0.18, f: 800, f2: 3500, q: 0.9, attaque: 0.03 });
+      note({ f: 196, t: 0.1, duree: 0.5, vol: 0.14, type: "triangle" });
+      cloche(294, 0.25, 0.06, 1.4);
+    },
   };
 
   // Plus la carte est rare, plus l'ambiance est lourde
@@ -172,8 +178,11 @@ const Sons = (() => {
   const vibrations = { SR: [60], UR: [70, 50, 70], L: [90, 60, 90, 60, 220] };
 
   // ---------- Ambiance : un vent lointain et lent ----------
-  function demarrerAmbiance() {
+    function demarrerAmbiance() {
     if (ambiance || !ac) return;
+    const t0 = ac.currentTime;
+
+    // 1. Le vent, qui monte et descend très lentement
     const s = ac.createBufferSource();
     s.buffer = bruit;
     s.loop = true;
@@ -181,32 +190,65 @@ const Sons = (() => {
     fl.type = "bandpass";
     fl.frequency.value = 350;
     fl.Q.value = 0.7;
-    const lfo = ac.createOscillator();       // fait monter et descendre le vent très lentement
+    const lfo = ac.createOscillator();
     lfo.frequency.value = 0.07;
     const lfoGain = ac.createGain();
     lfoGain.gain.value = 180;
     lfo.connect(lfoGain);
     lfoGain.connect(fl.frequency);
     const g = ac.createGain();
-    g.gain.setValueAtTime(0.0001, ac.currentTime);
-    g.gain.linearRampToValueAtTime(0.07, ac.currentTime + 3);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(0.07, t0 + 3);
     s.connect(fl);
     fl.connect(g);
     g.connect(master);
     s.start();
     lfo.start();
-    ambiance = { g, s, lfo };
+
+    // 2. Un bourdonnement très grave, à peine audible
+    const dr = ac.createGain();
+    dr.gain.setValueAtTime(0.0001, t0);
+    dr.gain.linearRampToValueAtTime(0.035, t0 + 5);
+    dr.connect(master);
+    const oscs = [55, 55.7, 82.4].map(f => {
+      const o = ac.createOscillator();
+      o.type = "sine";
+      o.frequency.value = f;
+      o.connect(dr);
+      o.start();
+      return o;
+    });
+
+    ambiance = { g, dr, s, lfo, oscs, timer: null };
+
+    // 3. De temps en temps, un bruit lointain : cloche, craquement ou gémissement
+    const evenement = () => {
+      if (!ambiance) return;
+      if (ac.state === "running") {
+        const r = Math.random();
+        if (r < 0.35) cloche(110 + Math.random() * 70, 0, 0.03, 5);
+        else if (r < 0.7) souffle({ duree: 0.18, vol: 0.05, f: 1500 + Math.random() * 1500, q: 4 });
+        else note({ f: 180 + Math.random() * 80, f2: 120, duree: 2.4, vol: 0.025, attaque: 0.8 });
+      }
+      ambiance.timer = setTimeout(evenement, 9000 + Math.random() * 16000);
+    };
+    ambiance.timer = setTimeout(evenement, 6000);
   }
 
   function arreterAmbiance() {
     if (!ambiance) return;
-    const { g, s, lfo } = ambiance;
+    const { g, dr, s, lfo, oscs, timer } = ambiance;
     ambiance = null;
+    clearTimeout(timer);
     const t = ac.currentTime;
-    g.gain.cancelScheduledValues(t);
-    g.gain.setValueAtTime(Math.max(g.gain.value, 0.0001), t);
-    g.gain.linearRampToValueAtTime(0.0001, t + 1);
-    setTimeout(() => { try { s.stop(); lfo.stop(); } catch { /* déjà arrêtés */ } }, 1100);
+    [g, dr].forEach(x => {
+      x.gain.cancelScheduledValues(t);
+      x.gain.setValueAtTime(Math.max(x.gain.value, 0.0001), t);
+      x.gain.linearRampToValueAtTime(0.0001, t + 1);
+    });
+    setTimeout(() => {
+      try { s.stop(); lfo.stop(); oscs.forEach(o => o.stop()); } catch { /* déjà arrêtés */ }
+    }, 1100);
   }
 
   // ---------- Ce que les autres fichiers utilisent ----------

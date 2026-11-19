@@ -83,6 +83,28 @@ function choisir(code) {
   afficher();
 }
 
+const OPTION_RECENT = $("tri").querySelector('option[value="recent"]');
+
+// Ce qui dépend de l'onglet et de la connexion : filtre Favoris, tri « dernière obtenue »
+function majBarre() {
+  const fav = $("filtre-favoris");
+  if (fav) {
+    fav.hidden = !connecte;
+    if (!connecte && filtreFavoris) {
+      filtreFavoris = false;
+      fav.setAttribute("aria-pressed", "false");
+    }
+  }
+  if (!OPTION_RECENT) return;
+  const tri = $("tri");
+  if (vue === "collection") {
+    if (!OPTION_RECENT.isConnected) tri.insertBefore(OPTION_RECENT, tri.options[1] || null);
+  } else {
+    if (OPTION_RECENT.isConnected) OPTION_RECENT.remove();
+    if (tri.value === "recent") tri.value = "rarete";
+  }
+}
+
 let page = 0;
 const GAP = 12;
 const LARGEUR_CIBLE = 108;   // largeur visée d'une carte en px : plus petit = plus de cartes par page
@@ -96,11 +118,13 @@ function mesure(W, H) {
 }
 
 function afficher() {
+  majBarre();
   const q = $("recherche").value.trim().toLowerCase();
   const tri = $("tri").value || "rarete";
   let liste = cartes.filter(c =>
     (!filtreRarete || c.rarete === filtreRarete) &&
-    (!(vue === "collection" && filtreFavoris) || favoris.has(c.id)) &&
+    (vue !== "collection" || possedees.has(c.id)) &&
+    (!filtreFavoris || favoris.has(c.id)) &&
     (!q || c.titre.toLowerCase().includes(q))
   );
   const cle = {
@@ -119,7 +143,7 @@ function afficher() {
   let videTexte = "Aucune carte ne correspond. Essaie un autre mot ou une autre rareté.";
   if (vue === "collection" && !connecte) videTexte = "Connecte-toi depuis l'onglet Boosters pour voir ta collection.";
   else if (vue === "collection" && !possedees.size) videTexte = "Ta collection est vide. Ouvre un booster pour commencer.";
-    else if (vue === "collection" && filtreFavoris && !favoris.size) videTexte = "Aucun favori pour l'instant. Clique sur l'étoile d'une carte pour en ajouter.";
+  else if (filtreFavoris && !favoris.size) videTexte = "Aucun favori pour l'instant. Clique sur l'étoile d'une carte que tu possèdes pour en ajouter.";
   $("message").replaceChildren(liste.length ? "" : el("p", { className: "vide" }, videTexte));
 
   const zone = $("grille-zone");
@@ -203,7 +227,7 @@ async function basculerFavori(id, b) {
     majEtoile(b, v);
   };
   appliquer(voulu);   // l'étoile change tout de suite, sans attendre le serveur
-  if (filtreFavoris && vue === "collection") afficher();   // la carte quitte la liste des favoris
+  if (filtreFavoris) afficher();
   const { error } = await sb.rpc("basculer_favori", { p_card: id, p_favori: voulu });
   if (error) {
     appliquer(!voulu);

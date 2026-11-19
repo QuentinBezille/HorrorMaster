@@ -28,6 +28,7 @@ async function appliquerSession(session) {
   if (connecte) await rafraichirJoueur();
   dessinerJoueur();
   afficher();
+  Echanges.session();
 }
 
 async function rafraichirJoueur() {
@@ -196,6 +197,7 @@ function majBoutonBooster() {
   $("suivante").textContent = !retournee ? "Retourner la carte"
     : dernier ? "Voir le récapitulatif" : "Carte suivante";
   $("booster-compteur").textContent = `Carte ${bIndex + 1} sur ${bCartes.length}`;
+  majFavBooster();
 }
 
 function avancer() {
@@ -218,10 +220,11 @@ function recap() {
   Sons.jouer("recap");
   $("pile").hidden = true;
   $("suivante").hidden = true;
+  $("fav-booster").hidden = true;
   $("fin-booster").hidden = false;
   $("booster-compteur").textContent = "Ton butin";
   $("rangee").hidden = false;
-  $("rangee").replaceChildren(...bCartes.map(c => carte(c)));
+  $("rangee").replaceChildren(...bCartes.map(c => cellule(c)));
   $("fin-booster").focus();
 }
 $("suivante").onclick = avancer;
@@ -231,4 +234,25 @@ $("fin-booster").onclick = async () => {
   await rafraichirJoueur();
   dessinerJoueur();
   afficher();
+};
+
+// --- Favori pendant l'ouverture ---
+function majFavBooster() {
+  const b = $("fav-booster");
+  const w = $("pile").children[bIndex];
+  const visible = connecte && !$("pile").hidden && !!w && w.classList.contains("retournee");
+  b.hidden = !visible;
+  if (!visible) return;
+  const fav = favoris.has(bCartes[bIndex].id);
+  b.setAttribute("aria-pressed", String(fav));
+  b.textContent = fav ? "★ Dans mes favoris" : "☆ Ajouter aux favoris";
+}
+
+$("fav-booster").onclick = async () => {
+  const c = bCartes[bIndex];
+  if (!c) return;
+  const p = basculerFavori(c.id, $("fav-booster"));   // met à jour tout de suite, annule si le serveur refuse
+  majFavBooster();
+  await p;
+  majFavBooster();
 };
