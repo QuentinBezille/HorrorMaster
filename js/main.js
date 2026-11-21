@@ -1,10 +1,11 @@
-// Onglets : Boosters, Toutes les cartes, Collection, Échanges, Amis
+// Onglets : Boosters, Toutes les cartes, Collection, Échanges, Amis, Succès
 const SECTIONS = {
   boosters: "onglet-boosters",
   cartes: "onglet-cartes",
   collection: "onglet-cartes",      // « Toutes les cartes » et « Collection » partagent la même page
   echanges: "onglet-echanges",
   amis: "onglet-amis",
+  succes: "onglet-succes",
 };
 
 function allerA(nom) {
@@ -22,6 +23,7 @@ function allerA(nom) {
   }
   Echanges.afficher(nom === "echanges");
   Amis.afficher(nom === "amis");
+  Succes.afficher(nom === "succes");
   if (nom === "collection" || nom === "boosters") Echanges.actualiser();
 }
 document.querySelectorAll(".onglet-btn").forEach(b => { b.onclick = () => allerA(b.dataset.onglet); });

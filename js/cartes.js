@@ -264,6 +264,23 @@ async function basculerFavori(id, b) {
   }
 }
 
+// Sacrifier un exemplaire en double contre des âmes (on garde toujours le dernier)
+function boutonSacrifice(c, d) {
+  const b = el("button", { className: "bouton petit sacrifice", type: "button",
+    textContent: `Sacrifier un double (+${valeurAmes(c)} âmes)` });
+  b.onclick = async () => {
+    b.disabled = true;
+    const { data, error } = await sb.rpc("sacrifier_carte", { p_card: c.id });
+    if (error) { b.textContent = error.message; return; }
+    possedees.set(c.id, data.quantite);
+    ames = data.ames;
+    d.close();
+    dessinerJoueur();
+    afficher();
+  };
+  return b;
+}
+
 function ouvrir(c) {
   const d = $("detail");
   d.style.setProperty("--rar", `var(--c-${c.rarete})`);
@@ -283,7 +300,8 @@ function ouvrir(c) {
     nomCourt(c.titre) !== c.titre ? el("p", { className: "complet", textContent: c.titre }) : "",
     chiffres,
     el("p", { className: "resume", textContent: c.resume || "Pas de résumé disponible." }),
-    el("a", { href: lien, target: "_blank", rel: "noopener", textContent: "Lire l'article sur Wikipédia" })
+    el("a", { href: lien, target: "_blank", rel: "noopener", textContent: "Lire l'article sur Wikipédia" }),
+    ...(connecte && TARIFS && q >= 2 ? [boutonSacrifice(c, d)] : [])
   );
   const gauche = c.image_url ? el("img", { src: c.image_url, alt: "" }) : el("div");
   d.replaceChildren(fermer, el("div", { className: "fiche" }, gauche, droite));

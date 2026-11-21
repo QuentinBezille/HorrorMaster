@@ -4,6 +4,8 @@ let connecte = false;
 let possedees = new Map();   // id de carte -> quantité
 let favoris = new Set();     // ids des cartes favorites
 let obtenues = new Map();    // id de carte -> date de dernière obtention (ms)
+let ames = 0;                // monnaie du joueur (voir sql/05_monnaie.sql)
+let TARIFS = null;           // tarifs de la monnaie, lus dans la base ; null = monnaie pas installée
 let monPseudo = null;        // mon pseudo (enregistré dans le compte : le site s'en souvient)
 let etat = null;             // { boosters, prochain }
 let minuteur = null;
@@ -34,6 +36,7 @@ async function appliquerSession(session) {
   possedees = new Map();
   favoris = new Set();
   obtenues = new Map();
+  ames = 0;
   monPseudo = null;
   etat = null;
   statut("");
@@ -50,6 +53,7 @@ async function appliquerSession(session) {
   afficher();
   Echanges.session();
   Amis.session();
+  Succes.session();
   // Fenêtre « pseudo » seulement si le serveur a refusé celui tapé (ou si le compte n'en a vraiment aucun),
   // jamais en cas d'erreur de lecture, et une seule fois par compte
   if (connecte && !monPseudo && !(refus && refus.lecture) && !$("connexion").open && comptePropose !== id) {
@@ -67,11 +71,16 @@ async function monId() {
 async function rafraichirJoueur() {
   dernierRafraichi = Date.now();
   const uid = await monId();
-  const [e, col] = await Promise.all([
+  const [e, col, pl] = await Promise.all([
     sb.rpc("etat_joueur"),
     toutLire("collection", "card_id, quantite, favori, derniere_obtention", "card_id", ["player_id", uid]),
+    sb.from("players").select("ames").eq("id", uid).maybeSingle(),
   ]);
   if (!e.error) etat = e.data;
+  if (!pl.error && pl.data) {
+    ames = pl.data.ames || 0;
+    if (!TARIFS) { const t = await sb.rpc("tarifs_ames"); if (!t.error) TARIFS = t.data; }
+  }
   if (!col.error) {
     possedees = new Map(col.data.map(l => [l.card_id, l.quantite]));
     favoris = new Set(col.data.filter(l => l.favori).map(l => l.card_id));
@@ -115,7 +124,7 @@ function dessinerJoueur() {
   const qui = monPseudo
     ? el("p", { className: "info" }, "Connecté en tant que ", el("b", { textContent: monPseudo }))
     : el("button", { className: "bouton petit", type: "button", textContent: "Choisir mon pseudo", onclick: ouvrirDialoguePseudo });
-  z.replaceChildren(paquet, qui, info, sortir);
+  z.replaceChildren(paquet, qui, info, ...blocMonnaie(), sortir);
 
   const maj = () => {
     const n = etat ? etat.boosters : 0;
@@ -135,6 +144,55 @@ function dessinerJoueur() {
   };
   maj();
   minuteur = setInterval(maj, 1000);
+}
+
+// --- Monnaie : les âmes (gagnées en sacrifiant des doubles, dépensées en boosters) ---
+function valeurAmes(c) {
+  if (!TARIFS) return 0;
+  return (TARIFS.valeurs[c.rarete] || 0) * (c.shiny ? TARIFS.shiny : 1);
+}
+
+function blocMonnaie() {
+  if (!TARIFS) return [];
+  const solde = el("p", { className: "ames" }, "👻 ", el("b", { textContent: ames.toLocaleString("fr-FR") }), " âmes");
+  const acheter = el("button", { className: "bouton petit", type: "button",
+    textContent: `Acheter un booster (${TARIFS.booster} âmes)`, disabled: ames < TARIFS.booster });
+  acheter.onclick = async () => {
+    acheter.disabled = true;
+    const { data, error } = await sb.rpc("acheter_booster");
+    if (error) { Sons.jouer("erreur"); statut(error.message); return dessinerJoueur(); }
+    ames = data.ames;
+    etat = { boosters: data.boosters, prochain: etat ? etat.prochain : new Date().toISOString() };
+    Sons.jouer("clic");
+    statut("Booster acheté.");
+    dessinerJoueur();
+  };
+  const sacrifier = el("button", { className: "bouton petit", type: "button", textContent: "Sacrifier mes doubles" });
+  sacrifier.onclick = sacrifierDoubles;
+  return [el("div", { className: "monnaie" }, solde, el("div", { className: "monnaie-actions" }, acheter, sacrifier))];
+}
+
+async function sacrifierDoubles() {
+  const ordre = ["C", "PC", "R", "SR", "UR", "L"];
+  const max = ordre.indexOf(TARIFS.max_doubles);
+  let nb = 0, gain = 0;
+  for (const [id, q] of possedees) {
+    const c = parId.get(id);
+    if (!c || q < 2 || c.shiny || favoris.has(id) || ordre.indexOf(c.rarete) > max) continue;
+    nb += q - 1;
+    gain += (q - 1) * valeurAmes(c);
+  }
+  if (!nb) return statut("Aucun double à sacrifier (les favoris et les shiny sont toujours gardés).");
+  const jusqua = NOMS[TARIFS.max_doubles];
+  if (!confirm(`Sacrifier ${nb} carte${nb > 1 ? "s" : ""} en double (Communes à ${jusqua}s) contre ${gain} âmes ?\n` +
+               "Tu gardes toujours un exemplaire de chaque carte, et tes favoris et shiny sont épargnés.")) return;
+  const { data, error } = await sb.rpc("sacrifier_doubles", { p_max: TARIFS.max_doubles });
+  if (error) { Sons.jouer("erreur"); return statut(error.message); }
+  Sons.jouer("clic");
+  statut(`${data.cartes} carte${data.cartes > 1 ? "s" : ""} sacrifiée${data.cartes > 1 ? "s" : ""} : +${data.gain} âmes.`);
+  await rafraichirJoueur();
+  dessinerJoueur();
+  afficher();
 }
 
 // --- Connexion, inscription et pseudo : une seule fenêtre ---
@@ -385,6 +443,7 @@ $("fin-booster").onclick = async () => {
   await rafraichirJoueur();
   dessinerJoueur();
   afficher();
+  Succes.verifier(true);
 };
 
 // --- Favori pendant l'ouverture ---

@@ -1,0 +1,6 @@
+/* Monnaie : les âmes */
+.monnaie { display: grid; gap: 8px; justify-items: center; margin: 4px 0 8px; }
+.ames { margin: 0; font-size: 18px; }
+.ames b { color: var(--c-L); font-family: var(--titre); font-weight: 600; font-size: 22px; }
+.monnaie-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.bouton.sacrifice { margin-top: 12px; display: block; }

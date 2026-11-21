@@ -12,6 +12,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/echanges.css">
+<link rel="stylesheet" href="css/succes.css">
+<link rel="stylesheet" href="css/monnaie.css">
 </head>
 <body class="page-boosters">
 
@@ -35,6 +37,7 @@
   <button class="onglet-btn" type="button" role="tab" data-onglet="collection" aria-selected="false">Collection</button>
   <button class="onglet-btn" type="button" role="tab" data-onglet="echanges" aria-selected="false">Échanges</button>
   <button class="onglet-btn" type="button" role="tab" data-onglet="amis" aria-selected="false">Amis</button>
+  <button class="onglet-btn" type="button" role="tab" data-onglet="succes" aria-selected="false">Succès</button>
 
 </nav>
 
@@ -100,6 +103,10 @@
   <div id="amis-contenu"></div>
 </section>
 
+<section id="onglet-succes" class="onglet" hidden>
+  <div class="succes-page" id="succes-contenu"></div>
+</section>
+
 <dialog id="detail"></dialog>
 
 <dialog id="connexion">
@@ -129,6 +136,7 @@
 
 <script src="js/echanges.js"></script>
 <script src="js/amis.js"></script>
+<script src="js/succes.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

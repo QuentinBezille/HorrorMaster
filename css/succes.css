@@ -1,0 +1,38 @@
+/* Onglet Succès */
+.succes-page { max-width: 1100px; margin: 0 auto; padding: 18px 24px 60px; }
+.succes-entete h2 { font-family: var(--titre); font-weight: 600; margin: 0 0 8px; }
+.succes-barre { height: 8px; border-radius: 8px; background: var(--fond-2); border: 1px solid var(--trait); overflow: hidden; }
+.succes-barre i { display: block; height: 100%; background: linear-gradient(90deg, var(--sang), var(--c-L)); }
+.succes-sous { margin: 8px 0 0; color: var(--os-doux); font-size: 14px; }
+.succes-barre.petite { height: 5px; margin: 6px 0 3px; }
+.succes-cat h3 { font-family: var(--titre); font-weight: 500; letter-spacing: 0.04em; margin: 26px 0 10px; color: var(--os); }
+.succes-cat h3 span { color: var(--os-doux); font-size: 0.8em; }
+.succes-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 10px; }
+.succes { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 10px;
+  background: var(--fond-2); border: 1px solid var(--trait); opacity: 0.72; }
+.succes.ok { opacity: 1; border-color: var(--c-L); box-shadow: 0 0 14px rgba(255, 211, 74, 0.14); }
+.succes-ico { flex: none; width: 44px; height: 44px; display: grid; place-items: center; font-size: 24px;
+  border-radius: 10px; background: rgba(0, 0, 0, 0.3); filter: grayscale(1); }
+.succes.ok .succes-ico { filter: none; background: rgba(255, 211, 74, 0.1); }
+.succes-txt { min-width: 0; flex: 1; }
+.succes-txt b { font-family: var(--titre); font-weight: 500; font-size: 17px; }
+.succes-txt p { margin: 2px 0 0; font-size: 14px; color: var(--os-doux); line-height: 1.35; }
+.succes-txt small { color: var(--os-doux); font-size: 12px; }
+.succes.ok .succes-txt small { color: var(--c-L); }
+
+/* Notification « Succès débloqué » */
+#succes-toasts { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 1000;
+  display: grid; gap: 8px; width: min(360px, calc(100vw - 24px)); pointer-events: none; }
+.succes-toast { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 12px;
+  background: var(--fond-2); border: 1px solid var(--c-L); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(255, 211, 74, 0.25);
+  animation: succes-entree 0.35s ease-out; transition: opacity 0.6s, transform 0.6s; }
+.succes-toast.sortie { opacity: 0; transform: translateY(10px); }
+.succes-toast b { color: var(--c-L); font-family: var(--titre); font-weight: 500; }
+.succes-toast-ico { font-size: 26px; }
+@keyframes succes-entree { from { opacity: 0; transform: translateY(16px) scale(0.96); } to { opacity: 1; transform: none; } }
+
+/* Récompense en âmes */
+.succes-prime { flex: none; align-self: center; font-family: var(--titre); font-size: 15px; color: var(--c-L);
+  padding: 3px 8px; border-radius: 8px; background: rgba(255, 211, 74, 0.08); border: 1px solid rgba(255, 211, 74, 0.25); white-space: nowrap; }
+.succes-prime.recue { color: var(--os-doux); border-color: var(--trait); background: transparent; }
+.succes-toast small { display: block; color: var(--c-L); }
