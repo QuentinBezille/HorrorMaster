@@ -34,6 +34,7 @@
   <button class="onglet-btn" type="button" role="tab" data-onglet="cartes" aria-selected="false">Toutes les cartes</button>
   <button class="onglet-btn" type="button" role="tab" data-onglet="collection" aria-selected="false">Collection</button>
   <button class="onglet-btn" type="button" role="tab" data-onglet="echanges" aria-selected="false">Échanges</button>
+  <button class="onglet-btn" type="button" role="tab" data-onglet="amis" aria-selected="false">Amis</button>
 
 </nav>
 
@@ -94,21 +95,29 @@
   <div id="ech-contenu"></div>
 </section>
 
+<section id="onglet-amis" class="onglet echanges" hidden>
+  <p id="ami-statut" class="msg" role="status"></p>
+  <div id="amis-contenu"></div>
+</section>
+
 <dialog id="detail"></dialog>
 
 <dialog id="connexion">
   <form class="modal-in" method="dialog" onsubmit="return false">
-    <h2>Connexion</h2>
-    <label>Email <input type="email" id="email" name="email" autocomplete="username"></label>
-    <label>Mot de passe <input type="password" id="mdp" name="mdp" autocomplete="current-password" minlength="6"></label>
+    <h2 id="titre-connexion">Connexion</h2>
+    <label id="champ-email">Email <input type="email" id="email" name="email" autocomplete="username" required></label>
+    <label id="champ-pseudo">Pseudo <input type="text" id="pseudo-inscription" name="pseudo-inscription" autocomplete="nickname" maxlength="20" required placeholder="3 à 20 caractères : lettres, chiffres, _ ou -"></label>
+    <label id="champ-mdp">Mot de passe <input type="password" id="mdp" name="mdp" autocomplete="current-password" minlength="6" required></label>
     <p id="msg-connexion" class="msg" role="status"></p>
     <div class="actions">
       <button class="bouton principal" id="btn-connexion" type="button">Se connecter</button>
       <button class="bouton" id="btn-inscription" type="button">Créer un compte</button>
+      <button class="bouton principal" id="btn-valider-pseudo" type="button" hidden>Valider</button>
       <button class="bouton" id="btn-annuler" type="button">Annuler</button>
     </div>
   </form>
 </dialog>
+
 
 
 
@@ -119,6 +128,7 @@
 <script src="js/joueur.js"></script>
 
 <script src="js/echanges.js"></script>
+<script src="js/amis.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

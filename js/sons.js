@@ -145,6 +145,12 @@ const Sons = (() => {
       note({ f: 196, t: 0.1, duree: 0.5, vol: 0.14, type: "triangle" });
       cloche(294, 0.25, 0.06, 1.4);
     },
+    // Carte shiny : une petite pluie de notes brillantes
+    shiny() {
+      [1318.5, 1568, 1975.5, 2637, 3136].forEach((f, i) =>
+        note({ f, t: 0.05 + i * 0.07, duree: 0.5, vol: 0.07, attaque: 0.004 }));
+      souffle({ duree: 0.6, vol: 0.05, filtre: "highpass", f: 5000, f2: 9000 });
+    },
   };
 
   // Plus la carte est rare, plus l'ambiance est lourde

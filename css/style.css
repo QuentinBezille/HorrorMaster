@@ -165,6 +165,7 @@ dialog::backdrop { background: rgba(4, 10, 11, 0.8); }
 
 .modal-in { padding: 22px; display: grid; gap: 14px; }
 .modal-in h2 { font-family: var(--titre); font-weight: 600; margin: 0; font-size: 28px; }
+.modal-in [hidden] { display: none; }
 .modal-in label { display: grid; gap: 4px; font-size: 15px; }
 .modal-in input { background: var(--fond); color: var(--os); border: 1px solid var(--trait);
   border-radius: 6px; padding: 8px 12px; font: inherit; }
@@ -808,3 +809,25 @@ html::after {
 .grille .carte-cell { transition: transform 0.2s; }
 .grille .carte-cell:hover { transform: translateY(-4px) rotate(-0.6deg); }
 .grille .carte-cell .carte:hover { transform: none; }
+/* ===== Cartes shiny : reflet arc-en-ciel qui traverse la carte ===== */
+.carte.shiny::after {
+  content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none; border-radius: inherit;
+  background:
+    linear-gradient(115deg, transparent 22%, rgba(255, 255, 255, 0.5) 32%, transparent 42%),
+    linear-gradient(125deg, #ff5e8a, #ffd25e, #5eff9d, #5ec8ff, #b45eff, #ff5e8a);
+  background-size: 260% 100%, 100% 100%;
+  background-position: 130% 0, 0 0;
+  mix-blend-mode: screen;
+  opacity: 0.3;
+  animation: shiny-eclat 4.5s ease-in-out infinite;
+}
+.carte.shiny .badge { background: linear-gradient(90deg, #ff9ec1, #ffe29a, #9affc2, #9bd8ff, #cfa0ff); color: #1a0d12; }
+.carte.shiny:hover::after { opacity: 0.45; }
+@keyframes shiny-eclat {
+  0%        { background-position: 130% 0, 0 0; }
+  55%, 100% { background-position: -50% 0, 0 0; }
+}
+dialog.shiny { box-shadow: 0 0 28px rgba(180, 94, 255, 0.45), 0 0 60px rgba(94, 200, 255, 0.25); }
+@media (prefers-reduced-motion: reduce) {
+  .carte.shiny::after { animation: none; }
+}

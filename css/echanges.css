@@ -51,6 +51,12 @@ header.entete { display: flex; flex-wrap: wrap; align-items: flex-end; justify-c
   display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); align-content: start; gap: 10px;
   max-height: 330px; overflow-y: auto; padding: 8px; background: rgba(0, 0, 0, 0.25); border-radius: 8px;
 }
+/* Barre de défilement discrète, aux couleurs du site */
+.ech-grille { scrollbar-width: thin; scrollbar-color: var(--sang) transparent; }
+.ech-grille::-webkit-scrollbar { width: 8px; }
+.ech-grille::-webkit-scrollbar-track { background: transparent; }
+.ech-grille::-webkit-scrollbar-thumb { background: var(--trait); border-radius: 8px; }
+.ech-grille::-webkit-scrollbar-thumb:hover { background: var(--sang); }
 .ech-grille .carte.choisie { outline: 3px solid var(--c-L); outline-offset: 2px; }
 .ech-note { margin: 6px 0 0; min-height: 1.2em; font-size: 13px; color: var(--os-doux); }
 
@@ -81,3 +87,25 @@ header.entete { display: flex; flex-wrap: wrap; align-items: flex-end; justify-c
   .ech-ligne-echange { grid-template-columns: 1fr; }
   .ech-actions { justify-content: flex-start; }
 }
+
+/* ----- Envoyer une carte, contre-offre ----- */
+.ech-modes { display: flex; gap: 8px; margin: 0 0 12px; }
+.ech-modes .bouton[aria-pressed=true] { color: var(--os); border-color: var(--sang); background: rgba(184, 36, 45, 0.2); }
+.ech-contre {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px;
+  margin: 0 0 12px; padding: 10px 14px; border-left: 3px solid var(--c-L); background: rgba(229, 193, 74, 0.08);
+  color: var(--os); font-size: 15px;
+}
+.ech-contre[hidden], .ech-modes[hidden] { display: none; }
+
+/* ----- Onglet Amis ----- */
+#onglet-amis .msg { margin: 0 0 8px; min-height: 1.5em; }
+.ami-liste { display: grid; gap: 8px; }
+.ami-ligne {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px;
+  padding: 10px 14px; border: 1px solid var(--trait); border-radius: 8px; background: rgba(10, 6, 7, 0.6);
+}
+.ami-nom { font-family: var(--titre); font-weight: 500; font-size: 20px; letter-spacing: 0.02em; }
+.ami-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ----- Fenêtre « Choisis ton pseudo » ----- */

@@ -1,17 +1,20 @@
-# Scripts et données de préparation (ne servent pas au site)
-scripts/
-sql/
-
-# Secrets
+# --- Secrets (ne JAMAIS les envoyer sur GitHub) ---
 .env
 .env.*
 
-# Python
+# --- Données de préparation, inutiles au site et à GitHub Actions ---
+scripts/films_cache.json
+sql/
+
+# --- Script lancé seulement à la main (GitHub Actions n'utilise pas celui-ci) ---
+scripts/ajouter_cartes.py
+
+# --- Fichiers générés ---
 __pycache__/
 *.pyc
 .venv/
 
-# Système et éditeur
+# --- Système et éditeur ---
 .DS_Store
 Thumbs.db
 .vscode/

@@ -4,44 +4,79 @@ let connecte = false;
 let possedees = new Map();   // id de carte -> quantité
 let favoris = new Set();     // ids des cartes favorites
 let obtenues = new Map();    // id de carte -> date de dernière obtention (ms)
+let monPseudo = null;        // mon pseudo (enregistré dans le compte : le site s'en souvient)
 let etat = null;             // { boosters, prochain }
 let minuteur = null;
 let dernierRafraichi = 0;
 
 function statut(t) { $("statut").textContent = t || ""; }
 
+let compteCharge = null;       // id du compte dont les données sont déjà chargées
+let comptePropose = null;      // compte pour lequel la fenêtre « pseudo » a déjà été proposée
+let fileSession = Promise.resolve();
+
 function initJoueur() {
   sb.auth.onAuthStateChange((evt, session) => {
     if (evt === "TOKEN_REFRESHED") return;
-    setTimeout(() => appliquerSession(session), 0);
+    // Supabase renvoie souvent plusieurs évènements d'affilée (connexion, retour sur l'onglet...) :
+    // on les traite l'un après l'autre pour qu'ils ne se marchent pas dessus
+    setTimeout(() => {
+      fileSession = fileSession.then(() => appliquerSession(session)).catch(e => console.error(e));
+    }, 0);
   });
 }
 
 async function appliquerSession(session) {
+  const id = session && session.user ? session.user.id : null;
+  if (id && id === compteCharge && monPseudo) return;   // même compte déjà prêt : rien à refaire
+  compteCharge = null;
   connecte = !!session;
   possedees = new Map();
   favoris = new Set();
   obtenues = new Map();
+  monPseudo = null;
   etat = null;
   statut("");
-  $("recherche").value = "";          // <-- ajouter cette ligne
-  if (connecte) await rafraichirJoueur();
+  $("recherche").value = "";
+  let refus = null;
+  if (connecte) {
+    await rafraichirJoueur();
+    refus = await chargerPseudo(session);      // le pseudo est enregistré dans le compte : le site s'en souvient
+    compteCharge = id;
+  } else {
+    comptePropose = null;
+  }
   dessinerJoueur();
   afficher();
   Echanges.session();
+  Amis.session();
+  // Fenêtre « pseudo » seulement si le serveur a refusé celui tapé (ou si le compte n'en a vraiment aucun),
+  // jamais en cas d'erreur de lecture, et une seule fois par compte
+  if (connecte && !monPseudo && !(refus && refus.lecture) && !$("connexion").open && comptePropose !== id) {
+    comptePropose = id;
+    ouvrirDialoguePseudo(refus);
+  }
+}
+
+// Id du joueur connecté : sert à ne lire QUE ses propres lignes (players, collection)
+async function monId() {
+  const { data } = await sb.auth.getSession();
+  return data && data.session ? data.session.user.id : null;
 }
 
 async function rafraichirJoueur() {
   dernierRafraichi = Date.now();
+  const uid = await monId();
   const [e, col] = await Promise.all([
     sb.rpc("etat_joueur"),
-    toutLire("collection", "card_id, quantite, favori, derniere_obtention", "card_id"),
+    toutLire("collection", "card_id, quantite, favori, derniere_obtention", "card_id", ["player_id", uid]),
   ]);
   if (!e.error) etat = e.data;
   if (!col.error) {
     possedees = new Map(col.data.map(l => [l.card_id, l.quantite]));
     favoris = new Set(col.data.filter(l => l.favori).map(l => l.card_id));
     obtenues = new Map(col.data.map(l => [l.card_id, l.derniere_obtention ? Date.parse(l.derniere_obtention) : 0]));
+    await assurerCartes([...possedees.keys()]);
   }
 }
 
@@ -77,7 +112,10 @@ function dessinerJoueur() {
   paquet.onclick = ouvrirBooster;
   const sortir = el("button", { className: "bouton", type: "button", textContent: "Se déconnecter" });
   sortir.onclick = () => sb.auth.signOut();
-  z.replaceChildren(paquet, info, sortir);
+  const qui = monPseudo
+    ? el("p", { className: "info" }, "Connecté en tant que ", el("b", { textContent: monPseudo }))
+    : el("button", { className: "bouton petit", type: "button", textContent: "Choisir mon pseudo", onclick: ouvrirDialoguePseudo });
+  z.replaceChildren(paquet, qui, info, sortir);
 
   const maj = () => {
     const n = etat ? etat.boosters : 0;
@@ -90,31 +128,140 @@ function dessinerJoueur() {
         rafraichirJoueur().then(dessinerJoueur);
       }
     }
-    t += ` Collection : ${possedees.size} cartes sur ${cartes.length}.`;
+    const nbShiny = [...possedees.keys()].filter(id => parId.get(id)?.shiny).length;
+    const totalBase = cartes.filter(c => !c.shiny).length;
+    t += ` Collection : ${possedees.size - nbShiny} cartes sur ${totalBase}` + (nbShiny ? ` et ${nbShiny} shiny.` : ".");
     info.textContent = t;
   };
   maj();
   minuteur = setInterval(maj, 1000);
 }
 
-// --- Connexion ---
+// --- Connexion, inscription et pseudo : une seule fenêtre ---
+const PSEUDO_OK = /^[A-Za-z0-9_-]{3,20}$/;
+const PSEUDO_REGLE = "Pseudo invalide : 3 à 20 caractères (lettres, chiffres, _ ou -).";
+let modeFenetre = "connexion";   // "connexion", ou "pseudo" quand on est connecté mais sans pseudo
+let pseudoSaisi = "";            // pseudo tapé dans la fenêtre, en attendant la fin de la connexion
+
 function msgConnexion(t) { $("msg-connexion").textContent = t; }
+
+function majFenetre() {
+  const pseudo = modeFenetre === "pseudo";
+  $("titre-connexion").textContent = pseudo ? "Choisis ton pseudo" : "Connexion";
+  $("champ-email").hidden = pseudo;
+  $("champ-mdp").hidden = pseudo;
+  $("btn-connexion").hidden = pseudo;
+  $("btn-inscription").hidden = pseudo;
+  $("btn-valider-pseudo").hidden = !pseudo;
+  $("btn-annuler").textContent = pseudo ? "Plus tard" : "Annuler";
+}
+// Quelle que soit la façon dont la fenêtre se ferme, elle revient en mode « Connexion »
+$("connexion").addEventListener("close", () => {
+  if ($("connexion").open) return;      // déjà rouverte entre-temps
+  modeFenetre = "connexion";
+  majFenetre();
+  msgConnexion("");
+});
 $("btn-annuler").onclick = () => $("connexion").close();
+
 $("btn-connexion").onclick = async () => {
-  const { error } = await sb.auth.signInWithPassword({
-    email: $("email").value.trim(), password: $("mdp").value });
-  if (error) return msgConnexion("Connexion impossible : " + error.message);
-  msgConnexion("");
-  $("connexion").close();
+  const pseudo = $("pseudo-inscription").value.trim();
+  if (!pseudo) return msgConnexion("Renseigne ton pseudo, ton email et ton mot de passe.");
+  if (!PSEUDO_OK.test(pseudo)) return msgConnexion(PSEUDO_REGLE);
+  $("btn-connexion").disabled = true;
+  try {
+    const { data: ouverture, error } = await sb.auth.signInWithPassword({
+      email: $("email").value.trim(), password: $("mdp").value });
+    if (error) return msgConnexion("Connexion impossible : " + error.message);
+    // Le pseudo tapé ici est enregistré tout de suite, dans cette fenêtre : on ne le redemande jamais
+    const { data: p } = await sb.from("players").select("pseudo").eq("id", ouverture.user.id).maybeSingle();
+    if (p && p.pseudo) {
+      if (p.pseudo.toLowerCase() !== pseudo.toLowerCase()) {
+        await sb.auth.signOut();
+        return msgConnexion("Ce pseudo ne correspond pas à ce compte.");
+      }
+      monPseudo = p.pseudo;
+    } else {
+      const r = await sb.rpc("definir_pseudo", { p_pseudo: pseudo });
+      if (r.error) return msgConnexion(r.error.message);     // par exemple : pseudo déjà pris
+      monPseudo = r.data || pseudo;
+    }
+    $("connexion").close();
+    dessinerJoueur();
+    Echanges.session();
+    Amis.session();
+  } finally {
+    $("btn-connexion").disabled = false;
+  }
 };
+
 $("btn-inscription").onclick = async () => {
+  const pseudo = $("pseudo-inscription").value.trim();
+  if (!pseudo) return msgConnexion("Pour créer un compte, renseigne aussi ton pseudo.");
+  if (!PSEUDO_OK.test(pseudo)) return msgConnexion(PSEUDO_REGLE);
+  $("btn-inscription").disabled = true;
+  const dispo = await sb.rpc("pseudo_disponible", { p_pseudo: pseudo });
+  if (!dispo.error && dispo.data === false) {
+    $("btn-inscription").disabled = false;
+    return msgConnexion("Ce pseudo est déjà pris : choisis-en un autre.");
+  }
   const { data, error } = await sb.auth.signUp({
-    email: $("email").value.trim(), password: $("mdp").value });
+    email: $("email").value.trim(), password: $("mdp").value, options: { data: { pseudo } } });
+  $("btn-inscription").disabled = false;
   if (error) return msgConnexion("Inscription impossible : " + error.message);
-  if (!data.session) return msgConnexion("Compte créé. Confirme ton adresse par email, puis connecte-toi.");
-  msgConnexion("");
+  if (!data.session) {
+    return msgConnexion("Compte créé. Confirme ton adresse par email, puis connecte-toi : ton pseudo « " + pseudo + " » sera enregistré à ta première connexion.");
+  }
   $("connexion").close();
 };
+
+// ----- Mon pseudo : saisi une seule fois dans cette fenêtre, puis mémorisé dans le compte -----
+
+// Lit le pseudo du compte. S'il n'est pas encore enregistré, on prend celui tapé dans la fenêtre de connexion
+// ou, à défaut, celui de l'inscription (le compte le garde). Renvoie { voulu, message } si le serveur le refuse.
+async function chargerPseudo(session) {
+  const saisi = pseudoSaisi;
+  pseudoSaisi = "";
+  const { data, error } = await sb.from("players").select("pseudo").eq("id", session.user.id).maybeSingle();
+  if (error) return { lecture: true };                  // lecture impossible : on ne dérange pas le joueur
+  if (data && data.pseudo) { monPseudo = data.pseudo; return null; }
+  const meta = session && session.user && session.user.user_metadata && session.user.user_metadata.pseudo;
+  const voulu = saisi || meta;
+  if (!voulu) return null;
+  const r = await sb.rpc("definir_pseudo", { p_pseudo: voulu });
+  if (!r.error) { monPseudo = r.data || voulu; return null; }
+  return { voulu, message: r.error.message };          // par exemple : pseudo pris entre-temps
+}
+
+// La même fenêtre, en mode « Choisis ton pseudo » : à la connexion si le compte n'en a pas, ou depuis l'onglet Échanges
+function ouvrirDialoguePseudo(refus) {
+  modeFenetre = "pseudo";
+  majFenetre();
+  msgConnexion(refus && refus.message ? refus.message : "");
+  if (refus && refus.voulu) $("pseudo-inscription").value = refus.voulu;
+  if (!$("connexion").open) $("connexion").showModal();
+  $("pseudo-inscription").focus();
+}
+async function validerPseudo() {
+  const pseudo = $("pseudo-inscription").value.trim();
+  if (!PSEUDO_OK.test(pseudo)) return msgConnexion(PSEUDO_REGLE);
+  $("btn-valider-pseudo").disabled = true;
+  const { data, error } = await sb.rpc("definir_pseudo", { p_pseudo: pseudo });
+  $("btn-valider-pseudo").disabled = false;
+  if (error) return msgConnexion(error.message);
+  monPseudo = data || pseudo;
+  $("connexion").close();
+  dessinerJoueur();
+  Echanges.session();
+  Amis.session();
+}
+$("btn-valider-pseudo").onclick = validerPseudo;
+$("connexion").addEventListener("keydown", ev => {
+  if (ev.key === "Enter" && ev.target.tagName === "INPUT" && modeFenetre === "pseudo") {
+    ev.preventDefault();
+    validerPseudo();
+  }
+});
 
 // --- Booster ---
 // --- Booster : une carte à la fois ---
@@ -144,6 +291,9 @@ async function ouvrirBooster() {
     Sons.jouer("ouverture");
     etat = { boosters: data.boosters, prochain: data.prochain };
     data.cartes.forEach(c => possedees.set(c.id, (possedees.get(c.id) || 0) + 1));
+    data.cartes.forEach(c => {          // une carte shiny toute neuve n'est pas encore dans la liste chargée
+      if (!parId.has(c.id)) { const { nouvelle, ...carteSeule } = c; parId.set(c.id, carteSeule); cartes.push(carteSeule); }
+    });
     bCartes = data.cartes;
     bIndex = 0;
     dessinerPile();
@@ -207,6 +357,7 @@ function avancer() {
     w.classList.add("retournee");
     Sons.jouer("retourner");
     Sons.rarete(bCartes[bIndex].rarete);
+    if (bCartes[bIndex].shiny) Sons.jouer("shiny");
     majBoutonBooster();
     return;
   }

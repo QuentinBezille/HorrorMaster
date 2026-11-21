@@ -1,0 +1,21 @@
+name: Mise à jour quotidienne des vues
+
+on:
+  schedule:
+    - cron: "30 2 * * *"      # chaque nuit à 02 h 30 UTC (03 h 30 ou 04 h 30 en France) : les vues d'hier sont alors complètes
+  workflow_dispatch:          # permet aussi de la lancer à la main depuis l'onglet Actions
+
+jobs:
+  maj:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests numpy supabase
+      - run: python .github/outils/maj_vues.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}

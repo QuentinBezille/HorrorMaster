@@ -13,12 +13,17 @@ const NOMS = Object.fromEntries(RARETES.map(r => [r.code, r.nom]));
 let cartes = [];
 let filtreRarete = null;
 let filtreFavoris = false;
+let filtreShiny = false;
+const parId = new Map();   // id -> carte (pour retrouver une carte à partir de son id)
 let vue = "cartes";   // "cartes" = toutes les cartes, "collection" = seulement les miennes
 
-async function toutLire(table, colonnes, tri) {
+// filtre = [colonne, valeur] : ne garde que les lignes de ce joueur, quelles que soient les règles de lecture de la base
+async function toutLire(table, colonnes, tri, filtre) {
   const tout = [];
   for (let i = 0; ; i += 1000) {
-    const { data, error } = await sb.from(table).select(colonnes).order(tri).range(i, i + 999);
+    let req = sb.from(table).select(colonnes);
+    if (filtre) req = req.eq(filtre[0], filtre[1]);
+    const { data, error } = await req.order(tri).range(i, i + 999);
     if (error) return { data: null, error };
     tout.push(...data);
     if (data.length < 1000) return { data: tout, error: null };
@@ -38,9 +43,19 @@ async function charger() {
     return erreur("La table cards est vide, ou la lecture publique n'est pas autorisée. Vérifie que la règle de lecture (policy) est créée dans Supabase.");
   }
   cartes = data;
+  data.forEach(c => parId.set(c.id, c));
   construireFiltres();
   afficher();
   initJoueur();
+}
+
+// Charge les cartes qu'on ne connaît pas encore (ex. un jumeau shiny créé après l'ouverture de la page)
+async function assurerCartes(ids) {
+  const manquantes = [...new Set(ids)].filter(id => !parId.has(id));
+  if (!manquantes.length) return;
+  const { data, error } = await sb.from("cards").select("*").in("id", manquantes);
+  if (error || !data) return;
+  data.forEach(c => { if (!parId.has(c.id)) { parId.set(c.id, c); cartes.push(c); } });
 }
 
 function erreur(texte) {
@@ -73,11 +88,21 @@ function construireFiltres() {
     afficher();
   };
   zone.append(fav);
+  // Filtre « Shiny » : montre toutes les cartes shiny (celles qu'on n'a pas encore sont grisées)
+  const shiny = el("button", { id: "filtre-shiny", className: "filtre", type: "button", textContent: "✦ Shiny" });
+  shiny.setAttribute("aria-pressed", "false");
+  shiny.onclick = () => {
+    filtreShiny = !filtreShiny;
+    shiny.setAttribute("aria-pressed", String(filtreShiny));
+    page = 0;
+    afficher();
+  };
+  zone.append(shiny);
 }
 function choisir(code) {
   filtreRarete = code;
   page = 0;
-  document.querySelectorAll(".filtre:not(#filtre-favoris)").forEach(b => {
+  document.querySelectorAll(".filtre:not(#filtre-favoris):not(#filtre-shiny)").forEach(b => {
     b.setAttribute("aria-pressed", String((b.dataset.code ?? null) === code));
   });
   afficher();
@@ -124,6 +149,8 @@ function afficher() {
   let liste = cartes.filter(c =>
     (!filtreRarete || c.rarete === filtreRarete) &&
     (vue !== "collection" || possedees.has(c.id)) &&
+    (!c.shiny || possedees.has(c.id) || filtreShiny) &&   // un shiny non possédé n'apparaît que via le filtre Shiny
+    (!filtreShiny || c.shiny) &&
     (!filtreFavoris || favoris.has(c.id)) &&
     (!q || c.titre.toLowerCase().includes(q))
   );
@@ -172,6 +199,7 @@ function changerPage(d) { page += d; afficher(); }
 function carte(c) {
   const b = el("button", { className: "carte", type: "button" });
   b.dataset.r = c.rarete;
+  if (c.shiny) b.classList.add("shiny");
   const visuel = el("div", { className: "visuel" });
   if (c.image_url) {
     const img = el("img", { src: c.image_url, alt: "", loading: "lazy" });
@@ -190,7 +218,7 @@ function carte(c) {
     el("div", { className: "stats" },
       el("span", { className: "atq" }, "Att. ", el("b", { textContent: c.atq })),
       el("span", { className: "def" }, "Déf. ", el("b", { textContent: c.def })),
-      el("span", { className: "badge", textContent: c.rarete })
+      el("span", { className: "badge", textContent: c.rarete + (c.shiny ? " ✦" : "") })
     )
   );
   b.onclick = () => ouvrir(c);
@@ -239,12 +267,13 @@ async function basculerFavori(id, b) {
 function ouvrir(c) {
   const d = $("detail");
   d.style.setProperty("--rar", `var(--c-${c.rarete})`);
+  d.classList.toggle("shiny", !!c.shiny);
   const lien = "https://fr.wikipedia.org/wiki/" + encodeURIComponent(c.titre.replace(/ /g, "_"));
   const fermer = el("button", { className: "fermer", type: "button", textContent: "Fermer" });
   fermer.onclick = () => d.close();
   const chiffres = el("dl", { className: "chiffres" });
   const q = possedees.get(c.id) || 0;
-  [["Rareté", NOMS[c.rarete]], ["Attaque", c.atq], ["Défense", c.def],
+  [["Rareté", NOMS[c.rarete] + (c.shiny ? " — Shiny ✦" : "")], ["Attaque", c.atq], ["Défense", c.def],
    ["Vues sur 30 jours", nombre(c.vues_30j)], ["Année", c.annee ?? "inconnue"],
    ["Langues de l'article", c.nb_langues],
    ...(q ? [["Exemplaires", q]] : [])].forEach(([t, v]) =>
