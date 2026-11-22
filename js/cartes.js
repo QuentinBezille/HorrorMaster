@@ -14,6 +14,7 @@ let cartes = [];
 let filtreRarete = null;
 let filtreFavoris = false;
 let filtreShiny = false;
+let filtreDoubles = false;
 const parId = new Map();   // id -> carte (pour retrouver une carte à partir de son id)
 let vue = "cartes";   // "cartes" = toutes les cartes, "collection" = seulement les miennes
 
@@ -98,11 +99,22 @@ function construireFiltres() {
     afficher();
   };
   zone.append(shiny);
+  // Filtre « Doubles » : seulement dans la Collection, les cartes que j'ai en plusieurs exemplaires
+  const dbl = el("button", { id: "filtre-doubles", className: "filtre", type: "button", textContent: "×2 Doubles" });
+  dbl.setAttribute("aria-pressed", "false");
+  dbl.hidden = true;
+  dbl.onclick = () => {
+    filtreDoubles = !filtreDoubles;
+    dbl.setAttribute("aria-pressed", String(filtreDoubles));
+    page = 0;
+    afficher();
+  };
+  zone.append(dbl);
 }
 function choisir(code) {
   filtreRarete = code;
   page = 0;
-  document.querySelectorAll(".filtre:not(#filtre-favoris):not(#filtre-shiny)").forEach(b => {
+  document.querySelectorAll(".filtre:not(#filtre-favoris):not(#filtre-shiny):not(#filtre-doubles)").forEach(b => {
     b.setAttribute("aria-pressed", String((b.dataset.code ?? null) === code));
   });
   afficher();
@@ -118,6 +130,14 @@ function majBarre() {
     if (!connecte && filtreFavoris) {
       filtreFavoris = false;
       fav.setAttribute("aria-pressed", "false");
+    }
+  }
+  const dbl = $("filtre-doubles");
+  if (dbl) {
+    dbl.hidden = !(connecte && vue === "collection");
+    if (dbl.hidden && filtreDoubles) {
+      filtreDoubles = false;
+      dbl.setAttribute("aria-pressed", "false");
     }
   }
   if (!OPTION_RECENT) return;
@@ -152,6 +172,7 @@ function afficher() {
     (!c.shiny || possedees.has(c.id) || filtreShiny) &&   // un shiny non possédé n'apparaît que via le filtre Shiny
     (!filtreShiny || c.shiny) &&
     (!filtreFavoris || favoris.has(c.id)) &&
+    (!filtreDoubles || (possedees.get(c.id) || 0) >= 2) &&
     (!q || c.titre.toLowerCase().includes(q))
   );
   const cle = {
@@ -170,6 +191,7 @@ function afficher() {
   let videTexte = "Aucune carte ne correspond. Essaie un autre mot ou une autre rareté.";
   if (vue === "collection" && !connecte) videTexte = "Connecte-toi depuis l'onglet Boosters pour voir ta collection.";
   else if (vue === "collection" && !possedees.size) videTexte = "Ta collection est vide. Ouvre un booster pour commencer.";
+  else if (filtreDoubles) videTexte = "Aucun double pour l'instant. Les cartes obtenues en plusieurs exemplaires apparaissent ici.";
   else if (filtreFavoris && !favoris.size) videTexte = "Aucun favori pour l'instant. Clique sur l'étoile d'une carte que tu possèdes pour en ajouter.";
   $("message").replaceChildren(liste.length ? "" : el("p", { className: "vide" }, videTexte));
 

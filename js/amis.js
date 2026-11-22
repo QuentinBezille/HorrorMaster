@@ -100,13 +100,11 @@ const Amis = (() => {
       ann.onclick = () => appeler("retirer_ami", { p_id: a.id }, "Demande annulée.", [ann]);
       actions.append(ann);
     } else {
-      const ech = el("button", { className: "bouton petit", type: "button", textContent: "Échanger" });
-      const don = el("button", { className: "bouton petit", type: "button", textContent: "Envoyer une carte" });
-      ech.onclick = () => { Echanges.avec(a.pseudo, "echange"); allerA("echanges"); };
-      don.onclick = () => { Echanges.avec(a.pseudo, "don"); allerA("echanges"); };
+      const ech = el("button", { className: "bouton petit", type: "button", textContent: "Échanger / offrir" });
+      ech.onclick = () => { Echanges.avec(a.pseudo); allerA("echanges"); };
       const ret = confirmable("Retirer", "Confirmer ?", b =>
         appeler("retirer_ami", { p_id: a.id }, a.pseudo + " n'est plus dans tes amis.", [b]));
-      actions.append(ech, don, ret);
+      actions.append(ech, ret);
     }
     return el("div", { className: "ami-ligne" }, el("span", { className: "ami-nom", textContent: a.pseudo }), actions);
   }

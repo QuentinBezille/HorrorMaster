@@ -16,7 +16,7 @@ NATURES = {
     "film":  ["Q11424", "Q24869"],      # film, long métrage (déjà dans ta base)
     "film2": ["Q24862", "Q202866", "Q506240"],   # court métrage, film d'animation, téléfilm
     "serie": ["Q5398426"],              # série télévisée d'horreur
-    # "jeu": ["Q7889"],                 # jeux vidéo d'horreur (Resident Evil, Silent Hill...)
+    "jeu": ["Q7889"],                 # jeux vidéo d'horreur (Resident Evil, Silent Hill...)
 }
 GENRE = "Q200092"                       # film d'horreur et tous ses sous-genres
 PAGE = 1500

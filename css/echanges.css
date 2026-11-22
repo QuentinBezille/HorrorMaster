@@ -109,3 +109,23 @@ header.entete { display: flex; flex-wrap: wrap; align-items: flex-end; justify-c
 .ami-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* ----- Fenêtre « Choisis ton pseudo » ----- */
+
+/* ----- Échanges à plusieurs cartes ----- */
+.ech-cartes { flex-wrap: wrap; }
+.ech-vignettes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 480px; }
+.ech-vider { margin-top: 8px; }
+.ech-selecteur h3 { display: flex; align-items: baseline; gap: 6px; }
+
+/* ----- Sous-onglets de la page Échanges : Reçu / Envoyer / Historique ----- */
+.ech-sous-onglets { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 18px; border-bottom: 1px solid var(--trait); }
+.sous-btn {
+  font-family: var(--titre); font-weight: 500; font-size: 17px; letter-spacing: 0.03em; cursor: pointer;
+  color: var(--os-doux); background: transparent; border: 0; border-bottom: 3px solid transparent;
+  padding: 8px 16px; margin-bottom: -1px;
+}
+.sous-btn:hover { color: var(--os); }
+.sous-btn[aria-selected=true] { color: var(--os); border-bottom-color: var(--sang); }
+.sous-btn.alerte { color: var(--c-L); }
+.sous-btn:focus { outline: none; }
+.sous-btn:focus-visible { background: rgba(184, 36, 45, 0.14); }
+.ech-panneau[hidden] { display: none; }

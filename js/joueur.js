@@ -100,8 +100,18 @@ const CRANE = '<svg viewBox="0 0 64 64" aria-hidden="true">' +
   '<circle class="pupille" cx="22" cy="28" r="2"/><circle class="pupille" cx="42" cy="28" r="2"/>' +
   '<path class="nez" d="M32 34l-4 8h8z"/></svg>';
 
+// Les âmes et l'engrenage vivent dans la barre des onglets, donc visibles partout
+function majBarreDroite() {
+  const b = $("monnaie-barre");
+  if (!b) return;
+  const montrer = connecte && !!TARIFS;
+  b.hidden = !montrer;
+  if (montrer) $("monnaie-nb").textContent = ames.toLocaleString("fr-FR");
+}
+
 function dessinerJoueur() {
   const z = $("joueur");
+  majBarreDroite();
   clearInterval(minuteur);
   const paquet = el("button", { className: "paquet", type: "button" },
     el("span", { className: "paquet-sang", innerHTML: SANG }),
@@ -119,12 +129,10 @@ function dessinerJoueur() {
   }
 
   paquet.onclick = ouvrirBooster;
-  const sortir = el("button", { className: "bouton", type: "button", textContent: "Se déconnecter" });
-  sortir.onclick = () => sb.auth.signOut();
   const qui = monPseudo
     ? el("p", { className: "info" }, "Connecté en tant que ", el("b", { textContent: monPseudo }))
     : el("button", { className: "bouton petit", type: "button", textContent: "Choisir mon pseudo", onclick: ouvrirDialoguePseudo });
-  z.replaceChildren(paquet, qui, info, ...blocMonnaie(), sortir);
+  z.replaceChildren(paquet, qui, info, ...blocMonnaie());
 
   const maj = () => {
     const n = etat ? etat.boosters : 0;
@@ -152,9 +160,29 @@ function valeurAmes(c) {
   return (TARIFS.valeurs[c.rarete] || 0) * (c.shiny ? TARIFS.shiny : 1);
 }
 
+// Y a-t-il des doubles à sacrifier ? Mêmes règles que le serveur : ni favoris, ni shiny, jusqu'à la rareté maximale
+function aDesDoublons() {
+  if (!TARIFS) return false;
+  const ordre = ["C", "PC", "R", "SR", "UR", "L"];
+  const max = ordre.indexOf(TARIFS.max_doubles);
+  for (const [id, q] of possedees) {
+    const c = parId.get(id);
+    if (c && q >= 2 && !c.shiny && !favoris.has(id) && ordre.indexOf(c.rarete) <= max) return true;
+  }
+  return false;
+}
+
+function majSacrifice() {
+  const b = $("btn-sacrifier");
+  if (!b) return;
+  b.disabled = !aDesDoublons();
+  b.title = b.disabled ? "Aucun double à sacrifier" : "";
+}
+// Quand on revient sur l'onglet Boosters (les favoris ont pu changer entre-temps)
+document.querySelector('.onglet-btn[data-onglet="boosters"]').addEventListener("click", majSacrifice);
+
 function blocMonnaie() {
   if (!TARIFS) return [];
-  const solde = el("p", { className: "ames" }, "👻 ", el("b", { textContent: ames.toLocaleString("fr-FR") }), " âmes");
   const acheter = el("button", { className: "bouton petit", type: "button",
     textContent: `Acheter un booster (${TARIFS.booster} âmes)`, disabled: ames < TARIFS.booster });
   acheter.onclick = async () => {
@@ -167,9 +195,11 @@ function blocMonnaie() {
     statut("Booster acheté.");
     dessinerJoueur();
   };
-  const sacrifier = el("button", { className: "bouton petit", type: "button", textContent: "Sacrifier mes doubles" });
+  const sacrifier = el("button", { id: "btn-sacrifier", className: "bouton petit", type: "button", textContent: "Sacrifier mes doubles" });
   sacrifier.onclick = sacrifierDoubles;
-  return [el("div", { className: "monnaie" }, solde, el("div", { className: "monnaie-actions" }, acheter, sacrifier))];
+  sacrifier.disabled = !aDesDoublons();                    // grisé tant qu'il n'y a rien à sacrifier
+  sacrifier.title = sacrifier.disabled ? "Aucun double à sacrifier" : "";
+  return [el("div", { className: "monnaie" }, el("div", { className: "monnaie-actions" }, acheter, sacrifier))];
 }
 
 async function sacrifierDoubles() {
@@ -466,3 +496,18 @@ $("fav-booster").onclick = async () => {
   await p;
   majFavBooster();
 };
+
+// --- Paramètres : engrenage en haut à droite (sons, compte) ---
+function ouvrirParametres() {
+  $("param-compte").textContent = connecte
+    ? (monPseudo ? "Connecté en tant que " + monPseudo : "Connecté")
+    : "Tu n'es pas connecté.";
+  $("btn-param-connexion").hidden = connecte;
+  $("btn-deconnexion").hidden = !connecte;
+  $("parametres").showModal();
+}
+$("btn-parametres").onclick = ouvrirParametres;
+$("btn-param-fermer").onclick = () => $("parametres").close();
+$("btn-deconnexion").onclick = async () => { $("parametres").close(); await sb.auth.signOut(); };
+$("btn-param-connexion").onclick = () => { $("parametres").close(); $("connexion").showModal(); };
+$("parametres").addEventListener("click", ev => { if (ev.target === $("parametres")) $("parametres").close(); });

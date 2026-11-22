@@ -39,6 +39,10 @@
   <button class="onglet-btn" type="button" role="tab" data-onglet="amis" aria-selected="false">Amis</button>
   <button class="onglet-btn" type="button" role="tab" data-onglet="succes" aria-selected="false">Succès</button>
 
+  <div class="barre-droite">
+    <span id="monnaie-barre" class="monnaie-barre" title="Tes âmes" hidden>👻 <b id="monnaie-nb">0</b></span>
+    <button id="btn-parametres" class="engrenage" type="button" aria-label="Paramètres" title="Paramètres">&#9881;&#xFE0E;</button>
+  </div>
 </nav>
 
 
@@ -108,6 +112,28 @@
 </section>
 
 <dialog id="detail"></dialog>
+
+<dialog id="parametres">
+  <div class="modal-in">
+    <h2>Paramètres</h2>
+    <p id="param-compte" class="info"></p>
+    <div class="param-groupe">
+      <h3>Sons</h3>
+      <div class="actions">
+        <button class="bouton" id="btn-son" type="button" aria-pressed="true">Son : oui</button>
+        <button class="bouton" id="btn-ambiance" type="button" aria-pressed="true">Ambiance : oui</button>
+      </div>
+    </div>
+    <div class="param-groupe">
+      <h3>Compte</h3>
+      <div class="actions">
+        <button class="bouton principal" id="btn-param-connexion" type="button" hidden>Se connecter</button>
+        <button class="bouton" id="btn-deconnexion" type="button" hidden>Se déconnecter</button>
+      </div>
+    </div>
+    <div class="actions"><button class="bouton" id="btn-param-fermer" type="button">Fermer</button></div>
+  </div>
+</dialog>
 
 <dialog id="connexion">
   <form class="modal-in" method="dialog" onsubmit="return false">
