@@ -166,7 +166,7 @@ const Echanges = (() => {
         "Ton pseudo n'est pas encore enregistré. Recharge la page ou reconnecte-toi : il se renseigne dans la fenêtre de connexion.")));
   }
 
-  const MAX_CARTES = 10;
+  const MAX_CARTES = 1000;
   const pluriel = n => n + " carte" + (n > 1 ? "s" : "");
 
   // Un sélecteur de cartes : recherche + petite grille où l'on clique pour (dé)cocher plusieurs cartes
@@ -412,15 +412,12 @@ const Echanges = (() => {
 
     const formulaire = el("section", { className: "ech-bloc", id: "ech-formulaire" },
       el("h2", { textContent: "Échanger ou offrir des cartes" }),
-      el("p", { className: "ech-aide" },
-        "Coche les cartes que tu donnes (jusqu'à 10). Coche aussi celles que tu veux en retour pour proposer un échange, ou n'en coche aucune pour faire un cadeau."),
-      banniere,
       el("div", { className: "ech-ligne" }, champ, amisListe, voir),
       el("div", { className: "ech-duo" }, selDonne.boite, fleche, selVeut.boite),
       el("div", { className: "ech-ligne" }, envoyer, resume));
 
     // Sous-onglets : Reçu / Envoyer / Historique (le formulaire reste en place quand on change d'onglet)
-    const SOUS = [["recu", "Reçu"], ["envoyer", "Envoyer"], ["histo", "Historique"]];
+    const SOUS = [["envoyer", "Envoyer"],["recu", "Reçu"], ["histo", "Historique"]];
     const panneaux = {
       recu: el("div", { id: "ech-p-recu", className: "ech-panneau" }),
       envoyer: el("div", { id: "ech-p-envoyer", className: "ech-panneau" }, formulaire, el("div", { id: "ech-l-envoyes" })),
@@ -447,8 +444,6 @@ const Echanges = (() => {
     ouvrirSous(sous || (recusAttente ? "recu" : "envoyer"));   // des propositions t'attendent : on les montre d'abord
 
     z.replaceChildren(
-      el("p", { className: "ech-pseudo" }, "Ton pseudo : ", el("b", { textContent: pseudo }),
-        " — tes amis te trouvent avec ce pseudo."),
       barreSous,
       panneaux.recu, panneaux.envoyer, panneaux.histo);
     remplirAmis();

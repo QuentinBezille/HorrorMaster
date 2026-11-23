@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="css/echanges.css">
 <link rel="stylesheet" href="css/succes.css">
 <link rel="stylesheet" href="css/monnaie.css">
+<link rel="stylesheet" href="css/repartition.css">
 </head>
 <body class="page-boosters">
 
@@ -40,8 +41,18 @@
   <button class="onglet-btn" type="button" role="tab" data-onglet="succes" aria-selected="false">Succès</button>
 
   <div class="barre-droite">
-    <span id="monnaie-barre" class="monnaie-barre" title="Tes âmes" hidden>👻 <b id="monnaie-nb">0</b></span>
-    <button id="btn-parametres" class="engrenage" type="button" aria-label="Paramètres" title="Paramètres">&#9881;&#xFE0E;</button>
+    <span id="monnaie-barre" class="monnaie-barre"
+      title="Tes âmes" hidden>
+      👻 <b id="monnaie-nb">0</b>
+    </span>
+
+    <span id="pseudo-barre" class="pseudo-barre" hidden></span>
+
+    
+
+    <button id="btn-parametres" class="engrenage"
+      type="button" aria-label="Paramètres"
+      title="Paramètres">&#9881;&#xFE0E;</button>
   </div>
 </nav>
 
@@ -65,6 +76,7 @@
 </section>
 
 <section id="onglet-cartes" class="onglet" hidden>
+<div id="repartition" class="repartition" aria-label="Répartition des cartes par rareté"></div>
 
 <div class="barre">
   <div class="barre-in">

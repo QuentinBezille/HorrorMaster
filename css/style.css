@@ -831,3 +831,18 @@ dialog.shiny { box-shadow: 0 0 28px rgba(180, 94, 255, 0.45), 0 0 60px rgba(94, 
 @media (prefers-reduced-motion: reduce) {
   .carte.shiny::after { animation: none; }
 }
+/* Masquer le compteur à côté du tri */
+#compte {
+    display: none !important;
+}
+
+/* Rapprocher les statistiques du booster */
+#joueur > .info {
+    margin: 5px 0 !important;
+    line-height: 1.25;
+}
+
+/* Réduire particulièrement l'espace entre les deux lignes */
+#joueur > .info + .info {
+    margin-top: 0 !important;
+}

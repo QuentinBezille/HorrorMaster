@@ -103,10 +103,18 @@ const CRANE = '<svg viewBox="0 0 64 64" aria-hidden="true">' +
 // Les âmes et l'engrenage vivent dans la barre des onglets, donc visibles partout
 function majBarreDroite() {
   const b = $("monnaie-barre");
-  if (!b) return;
-  const montrer = connecte && !!TARIFS;
-  b.hidden = !montrer;
-  if (montrer) $("monnaie-nb").textContent = ames.toLocaleString("fr-FR");
+  const p = $("pseudo-barre");
+
+  if (b) {
+    const montrer = connecte && !!TARIFS;
+    b.hidden = !montrer;
+    if (montrer) $("monnaie-nb").textContent = ames.toLocaleString("fr-FR");
+  }
+
+  if (p) {
+    p.hidden = !connecte || !monPseudo;
+    p.textContent = monPseudo || "";
+  }
 }
 
 function dessinerJoueur() {
@@ -129,26 +137,53 @@ function dessinerJoueur() {
   }
 
   paquet.onclick = ouvrirBooster;
-  const qui = monPseudo
-    ? el("p", { className: "info" }, "Connecté en tant que ", el("b", { textContent: monPseudo }))
-    : el("button", { className: "bouton petit", type: "button", textContent: "Choisir mon pseudo", onclick: ouvrirDialoguePseudo });
-  z.replaceChildren(paquet, qui, info, ...blocMonnaie());
+  const choisir = !monPseudo
+    ? el("button", {
+        className: "bouton petit",
+        type: "button",
+        textContent: "Choisir mon pseudo",
+        onclick: ouvrirDialoguePseudo
+      })
+    : null;
+
+  const boosters = el("p", { className: "info" });
+
+  z.replaceChildren(
+    paquet,
+    ...(choisir ? [choisir] : []),
+    boosters,
+    info,
+    ...blocMonnaie()
+  );
 
   const maj = () => {
     const n = etat ? etat.boosters : 0;
     paquet.disabled = n < 1;
-    let t = `${n} booster${n > 1 ? "s" : ""} sur 5.`;
+
+    boosters.textContent = `${n}/5 booster${n > 1 ? "s" : ""}`;
+
     if (etat && n < 5) {
-      const reste = Math.max(0, Math.ceil((new Date(etat.prochain) - Date.now()) / 1000));
-      t += ` Le prochain arrive dans ${Math.floor(reste / 60)}:${String(reste % 60).padStart(2, "0")}.`;
+      const reste = Math.max(
+        0,
+        Math.ceil((new Date(etat.prochain) - Date.now()) / 1000)
+      );
+
+      boosters.textContent +=
+        ` · Prochain dans ${Math.floor(reste / 60)}:${String(reste % 60).padStart(2, "0")}`;
+
       if (reste === 0 && Date.now() - dernierRafraichi > 15000) {
         rafraichirJoueur().then(dessinerJoueur);
       }
     }
-    const nbShiny = [...possedees.keys()].filter(id => parId.get(id)?.shiny).length;
+
+    const nbShiny = [...possedees.keys()]
+      .filter(id => parId.get(id)?.shiny).length;
+
     const totalBase = cartes.filter(c => !c.shiny).length;
-    t += ` Collection : ${possedees.size - nbShiny} cartes sur ${totalBase}` + (nbShiny ? ` et ${nbShiny} shiny.` : ".");
-    info.textContent = t;
+
+    info.textContent =
+      `${possedees.size - nbShiny}/${totalBase} cartes possédées` +
+      (nbShiny ? ` · ${nbShiny} shiny` : "");
   };
   maj();
   minuteur = setInterval(maj, 1000);

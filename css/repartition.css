@@ -1,0 +1,218 @@
+
+/* ==========================================
+   BANDEAU DE RÉPARTITION DES CARTES
+   Design moderne / Dark / Glassmorphism
+========================================== */
+
+#repartition {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 12px 0 18px;
+    padding: 14px 16px;
+
+    background: linear-gradient(
+        135deg,
+        rgba(25, 29, 32, 0.94),
+        rgba(12, 15, 17, 0.92)
+    );
+
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 12px;
+
+    box-shadow:
+        0 4px 15px rgba(0, 0, 0, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.035);
+
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    transition: border-color 0.25s ease,
+                box-shadow 0.25s ease;
+}
+
+#repartition[hidden] {
+    display: none !important;
+}
+
+/* Liste des raretés */
+
+#repartition .rep-liste {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 9px;
+
+    width: 100%;
+}
+
+/* Chaque rareté */
+
+#repartition .rep-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+
+    padding: 7px 11px;
+
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.075);
+    border-radius: 8px;
+
+    color: #e8e8e8;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1;
+
+    white-space: nowrap;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+/* Effet au survol */
+
+#repartition .rep-item:hover {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.20);
+    transform: translateY(-2px);
+}
+
+/* Pastille de couleur */
+
+#repartition .rep-point {
+    display: inline-block;
+    flex-shrink: 0;
+
+    width: 9px;
+    height: 9px;
+
+    border-radius: 50%;
+
+    box-shadow: 0 0 7px currentColor;
+}
+
+/* Code de rareté */
+
+#repartition .rep-code {
+    color: #b7bec4;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+/* Nombre de cartes */
+
+#repartition .rep-item b {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Total des cartes */
+
+#repartition .rep-total {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+
+    margin: 13px 0 0;
+    padding-top: 11px;
+
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+
+    color: #aeb7bd;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+}
+
+/* Mise en valeur du nombre total */
+
+#repartition .rep-total {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Adaptation mobile */
+
+@media (max-width: 600px) {
+    #repartition {
+        padding: 11px;
+        margin: 10px 0 14px;
+    }
+
+    #repartition .rep-liste {
+        gap: 6px;
+    }
+
+    #repartition .rep-item {
+        padding: 7px 9px;
+        gap: 5px;
+        font-size: 12px;
+    }
+
+    #repartition .rep-item b {
+        font-size: 13px;
+    }
+
+    #repartition .rep-total {
+        margin-top: 10px;
+        padding-top: 9px;
+        font-size: 11px;
+    }
+}
+
+/* Très petits écrans */
+
+@media (max-width: 360px) {
+    #repartition .rep-item {
+        padding: 6px 7px;
+        gap: 4px;
+    }
+}
+
+
+/* Répartition : raretés à gauche, total à droite */
+#repartition {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+/* Les raretés restent groupées à gauche */
+#repartition .rep-liste {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 9px;
+    flex: 1;
+    min-width: 0;
+}
+
+/* Le total reste collé à droite */
+#repartition .rep-total {
+    flex-shrink: 0;
+    margin: 0 0 0 auto;
+    padding: 0;
+    border: none;
+    white-space: nowrap;
+    text-align: right;
+}
+
+/* Mobile : retour à la ligne si nécessaire */
+@media (max-width: 650px) {
+    #repartition {
+        flex-wrap: wrap;
+    }
+
+    #repartition .rep-total {
+        width: 100%;
+        margin-top: 5px;
+    }
+}
+

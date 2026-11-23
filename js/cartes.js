@@ -162,8 +162,34 @@ function mesure(W, H) {
   return { cols, rows, cw: Math.floor(cw) };
 }
 
+// Répartition des cartes existantes par rareté (bandeau de l'onglet « Toutes les cartes »)
+let repartitionPour = -1;
+function majRepartition() {
+  const z = $("repartition");
+  if (!z) return;
+  z.hidden = vue !== "cartes";
+  if (z.hidden || repartitionPour === cartes.length) return;   // rien à recalculer tant que la liste ne change pas
+  repartitionPour = cartes.length;
+  const n = {};
+  let shiny = 0, total = 0;
+  for (const c of cartes) {
+    if (c.shiny) { shiny++; continue; }
+    n[c.rarete] = (n[c.rarete] || 0) + 1;
+    total++;
+  }
+  const puces = RARETES.map(r => el("span", { className: "rep-item", title: r.nom },
+    el("i", { className: "rep-point", style: `background: var(--c-${r.code})` }),
+    el("span", { className: "rep-code", textContent: r.code + " :" }),
+    el("b", { textContent: nombre(n[r.code] || 0) })));
+  z.replaceChildren(
+    el("div", { className: "rep-liste" }, ...puces),
+    el("p", { className: "rep-total", textContent:
+      `${nombre(total)} cartes au total` + (shiny ? ` · ${nombre(shiny)} shiny ✦` : "") }));
+}
+
 function afficher() {
   majBarre();
+  majRepartition();
   const q = $("recherche").value.trim().toLowerCase();
   const tri = $("tri").value || "rarete";
   let liste = cartes.filter(c =>

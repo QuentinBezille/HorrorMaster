@@ -22,3 +22,35 @@
 
 /* Boutons de la monnaie : bien gris quand ils ne servent à rien */
 .monnaie-actions .bouton:disabled { filter: grayscale(1); opacity: 0.4; cursor: not-allowed; }
+
+
+/* Pseudo dans la barre supérieure */
+.barre-droite {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.pseudo-barre {
+    color: #e4d9c5;
+    font-family: 'Source Serif 4', serif;
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.pseudo-barre[hidden] {
+    display: none;
+}
+
+/* Statistiques sous le booster */
+#joueur > .info {
+    margin: 10px 0;
+    color: #b9c0bd;
+    font-size: 16px;
+    text-align: center;
+}
+
+#joueur > .info:first-of-type {
+    font-weight: 600;
+}
